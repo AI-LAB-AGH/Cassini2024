@@ -154,7 +154,9 @@ def get_soil_properties(coordinates: tuple[float, float]) -> pd.DataFrame:
     df = pd.DataFrame(records)
     return df
 
+
+"""
 df = get_soil_properties((18.3448, 52.2079))
 print(df)
 df.to_csv("soil_properties.csv", index=False)
-
+"""

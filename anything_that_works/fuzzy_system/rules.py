@@ -1,4 +1,4 @@
-from vars import *
+from .vars import *
 
 rules = [
     # Dry Terrain, Wheel
