@@ -1,13 +1,13 @@
 import requests
 import pandas as pd
-
+import numpy as np
 
 
    
 def fetch_data(coordinates):
      return requests.get(f"https://rest.isric.org/soilgrids/v2.0/properties/query?lon={coordinates[0]}&lat={coordinates[1]}&property=bdod&property=cec&property=cfvo&property=clay&property=nitrogen&property=ocd&property=ocs&property=phh2o&property=sand&property=silt&property=soc&property=wv0010&property=wv0033&property=wv1500&depth=0-5cm&depth=5-15cm&depth=15-30cm&value=mean&value=uncertainty").json()
 
-def get_soil_properties(coordinates: tuple[float, float]) -> pd.DataFrame:
+def get_soil_properties(coordinates: list[tuple[float, float]]) -> pd.DataFrame:
     """
     Fetches and processes soil property data for a given geographic location.
 
@@ -118,40 +118,51 @@ def get_soil_properties(coordinates: tuple[float, float]) -> pd.DataFrame:
         - **Mapped Unit**: `(10^-2 cm³/cm³)*10`.
         - **Target Unit**: `10^-2 cm³/cm³`.
         - **Importance**: Represents the permanent wilting point, beyond which plants cannot extract water."""
+    df = pd.read_csv("soil_properties.csv")
+    records = None
+    for coordinate in coordinates:
+        if np.isclose(df["longitude"], coordinate[0]).any() and np.isclose(df["latitude"], coordinate[1]).any():
+            records = None
+            continue
+        data_dict = fetch_data(coordinate)
+        records = []
+        for layer in data_dict["properties"]["layers"]:
+            property_name = layer["name"]
+            depths = layer["depths"]
+            mean = 0
+            mean_uncertainty = 0
+            depth_count = 0
 
+            for depth in depths:
+                depth_label = depth["label"]
+                mean_value = depth["values"]["mean"]
+                uncertainty = depth["values"]["uncertainty"]
+                if not mean_value or not uncertainty:
+                    continue
+                mean += mean_value
+                mean_uncertainty += uncertainty
+                depth_count += 1
 
-    data_dict = fetch_data(coordinates)
-    records = []
-    for layer in data_dict["properties"]["layers"]:
-        property_name = layer["name"]
-        depths = layer["depths"]
-        mean = 0
-        mean_uncertainty = 0
-        depth_count = 0
-
-        for depth in depths:
-            depth_label = depth["label"]
-            mean_value = depth["values"]["mean"]
-            uncertainty = depth["values"]["uncertainty"]
-            mean += mean_value
-            mean_uncertainty += uncertainty
-            depth_count += 1
-
-        average_mean = mean / depth_count if depth_count > 0 else None
-        mean_uncertainty = mean_uncertainty / depth_count if depth_count > 0 else None
-        records.append({
-            "latitude": coordinates[1],
-            "longitude": coordinates[0],
-            "property": property_name,
-            "mapped_unit": layer["unit_measure"]["mapped_units"],
-            "mean_value_mapped_unit": average_mean,
-            "mean_uncertainty_mapped_unit": mean_uncertainty,
-            "target_unit": layer["unit_measure"]["target_units"],
-            "mean_value_target_unit": average_mean / layer["unit_measure"]["d_factor"],
-            "mean_uncertainty_target_unit": mean_uncertainty / layer["unit_measure"]["d_factor"],
-        })
-
-    df = pd.DataFrame(records)
+            average_mean = mean / depth_count if depth_count > 0 else None
+            mean_uncertainty = mean_uncertainty / depth_count if depth_count > 0 else None
+            try:
+                records.append({
+                    "latitude": coordinate[1],
+                    "longitude": coordinate[0],
+                    "property": property_name,
+                    "mapped_unit": layer["unit_measure"]["mapped_units"],
+                    "mean_value_mapped_unit": average_mean,
+                    "mean_uncertainty_mapped_unit": mean_uncertainty,
+                    "target_unit": layer["unit_measure"]["target_units"],
+                    "mean_value_target_unit": average_mean / layer["unit_measure"]["d_factor"],
+                    "mean_uncertainty_target_unit": mean_uncertainty / layer["unit_measure"]["d_factor"],
+                })
+            except:
+                continue
+    if records:
+        df2 = pd.DataFrame(records)
+        df = pd.concat([df, df2], ignore_index=True)
+        df.to_csv("soil_properties.csv", index=False)
     return df
 
 

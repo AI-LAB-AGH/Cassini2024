@@ -24,7 +24,6 @@ def get_rgb_from_sentinel(output_file, aoi):
         max_cloud_cover=10,
     )
         datacube.download(output_file+".nc")
-        datacube.download(output_file+".png")
 
     if not f"{output_file}.nc" in os.listdir():
         connection = make_connection()

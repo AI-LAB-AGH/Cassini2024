@@ -16,7 +16,7 @@ def download_and_compute_soil_moisture(aoi, resolution=10):
     :param resolution: Resolution in meters (default is 10m)
     :return: Soil moisture indicator matrix
     """
-    bbox = BBox(bbox=aoi, crs=CRS.WGS84)
+    bbox = BBox(bbox=aoi, crs="EPSG:4326")
     bbox_size = bbox_to_dimensions(bbox, resolution=resolution)
 
 
@@ -94,7 +94,7 @@ def get_soil_moisture_at_coordinates(soil_moisture_matrix, aoi, coordinates, res
     lon_res = (max_lon - min_lon) / num_cols
     lat_res = (max_lat - min_lat) / num_rows
 
-    lat, lon = coordinates
+    lon, lat = coordinates
     
     results = {}
     if not (min_lon <= lon <= max_lon and min_lat <= lat <= max_lat):
@@ -104,10 +104,11 @@ def get_soil_moisture_at_coordinates(soil_moisture_matrix, aoi, coordinates, res
     col = int((lon - min_lon) / lon_res)
     row = int((max_lat - lat) / lat_res)
 
-    try:
-        return soil_moisture_matrix[row, col]
-    except IndexError:
-        return soil_moisture_matrix[-1, -1]
+    col = min(max(col, 0), num_cols - 1)
+    row = min(max(row, 0), num_rows - 1)
+
+    return soil_moisture_matrix[row, col]
+    
     
 
 """
