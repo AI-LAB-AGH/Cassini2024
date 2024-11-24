@@ -23,7 +23,7 @@ def find_roads_and_generate_mask(img_tensor, bounding_box_coords, tags=None, crs
     _, H, W = img_tensor.shape 
     
     if tags is None:
-        tags = {"highway": True}  
+        tags = {"highway": True, "tracktype": ["grade4", "grade5"], "surface": "unpaved"}  
 
     
     bounding_box = box(*bounding_box_coords)
