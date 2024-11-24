@@ -164,3 +164,4 @@ cython_debug/
 test.py
 data_managing/test.py
 venv
+data_managing/secrets.py
